@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
-import { getBaseUrl, generateRandomString, verifyPkce, issueJwt, verifyJwt } from './oauth.js'
+import { getBaseUrl, generateRandomString, generatePkce, verifyPkce, issueJwt, verifyJwt } from './oauth.js'
 import {
   storeClient,
   storeOAuthState,
@@ -102,7 +102,10 @@ app.post('/register', async (c) => {
 app.get('/authorize', async (c) => {
   const { client_id, redirect_uri, code_challenge, code_challenge_method, state } = c.req.query()
 
-  // Store MCP OAuth params with a temp key
+  // Generate PKCE for SF-side OAuth (separate from MCP-side PKCE)
+  const sfPkce = await generatePkce()
+
+  // Store MCP OAuth params + SF PKCE verifier with a temp key
   const tempKey = generateRandomString(32)
   await storeOAuthState(tempKey, {
     client_id,
@@ -110,18 +113,21 @@ app.get('/authorize', async (c) => {
     code_challenge,
     code_challenge_method,
     state,
+    sfCodeVerifier: sfPkce.codeVerifier,
   })
 
   const baseUrl = getBaseUrl()
   const sfLoginUrl = process.env.SF_LOGIN_URL || 'https://login.salesforce.com'
 
-  // Redirect to Salesforce login
+  // Redirect to Salesforce login with PKCE
   const sfAuthUrl = new URL(`${sfLoginUrl}/services/oauth2/authorize`)
   sfAuthUrl.searchParams.set('response_type', 'code')
   sfAuthUrl.searchParams.set('client_id', process.env.SF_CLIENT_ID!)
   sfAuthUrl.searchParams.set('redirect_uri', `${baseUrl}/callback`)
   sfAuthUrl.searchParams.set('state', tempKey)
   sfAuthUrl.searchParams.set('scope', 'full refresh_token')
+  sfAuthUrl.searchParams.set('code_challenge', sfPkce.codeChallenge)
+  sfAuthUrl.searchParams.set('code_challenge_method', 'S256')
 
   return c.redirect(sfAuthUrl.toString())
 })
@@ -151,8 +157,8 @@ app.get('/callback', async (c) => {
 
   const baseUrl = getBaseUrl()
 
-  // Exchange SF auth code for SF tokens
-  const sfTokens = await exchangeSfAuthCode(sfCode, `${baseUrl}/callback`)
+  // Exchange SF auth code for SF tokens (with PKCE verifier)
+  const sfTokens = await exchangeSfAuthCode(sfCode, `${baseUrl}/callback`, oauthState.sfCodeVerifier)
   if (!sfTokens) {
     return c.text('Failed to exchange Salesforce authorization code. Please try again.', 500)
   }

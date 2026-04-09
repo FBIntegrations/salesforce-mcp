@@ -16,6 +16,17 @@ export function generateRandomString(length: number = 64): string {
   return Array.from(array, (b) => chars[b % chars.length]).join('')
 }
 
+export async function generatePkce(): Promise<{ codeVerifier: string; codeChallenge: string }> {
+  const codeVerifier = generateRandomString(64)
+  const data = new TextEncoder().encode(codeVerifier)
+  const hash = await crypto.subtle.digest('SHA-256', data)
+  const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '')
+  return { codeVerifier, codeChallenge }
+}
+
 export async function verifyPkce(codeVerifier: string, codeChallenge: string): Promise<boolean> {
   const data = new TextEncoder().encode(codeVerifier)
   const hash = await crypto.subtle.digest('SHA-256', data)

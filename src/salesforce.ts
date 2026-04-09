@@ -76,22 +76,27 @@ export async function sfApiRequest(
 export async function exchangeSfAuthCode(
   code: string,
   redirectUri: string,
+  codeVerifier?: string,
 ): Promise<{
   access_token: string
   refresh_token: string
   instance_url: string
   id: string
 } | null> {
+  const params: Record<string, string> = {
+    grant_type: 'authorization_code',
+    client_id: SF_CLIENT_ID(),
+    client_secret: SF_CLIENT_SECRET(),
+    code,
+    redirect_uri: redirectUri,
+  }
+  if (codeVerifier) {
+    params.code_verifier = codeVerifier
+  }
   const resp = await fetch(`${SF_LOGIN_URL()}/services/oauth2/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      client_id: SF_CLIENT_ID(),
-      client_secret: SF_CLIENT_SECRET(),
-      code,
-      redirect_uri: redirectUri,
-    }),
+    body: new URLSearchParams(params),
   })
   if (!resp.ok) return null
   return resp.json()
