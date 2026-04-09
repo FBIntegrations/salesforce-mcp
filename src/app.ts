@@ -14,7 +14,7 @@ import {
 import { exchangeSfAuthCode, getSfUserInfo } from './salesforce.js'
 import { registerTools } from './tools.js'
 
-const app = new Hono()
+const app = new Hono().basePath('/api')
 
 const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
