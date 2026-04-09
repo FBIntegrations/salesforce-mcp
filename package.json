@@ -4,8 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "vercel dev",
-    "build": "tsc"
+    "dev": "tsx watch src/index.ts"
   },
   "repository": {
     "type": "git",
@@ -21,6 +20,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.2",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }
 }
