@@ -4,9 +4,9 @@ const getJwtSecret = () => new TextEncoder().encode(process.env.MCP_JWT_SECRET!)
 
 export function getBaseUrl(): string {
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}/api`
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   }
-  return process.env.BASE_URL || 'http://localhost:3000/api'
+  return process.env.BASE_URL || 'http://localhost:3000'
 }
 
 export function generateRandomString(length: number = 64): string {
