@@ -30,7 +30,19 @@ app.options('*', () => new Response(null, { status: 204, headers: corsHeaders })
 // Health check
 // ──────────────────────────────────────
 
-app.get('/', (c) => c.json({ status: 'ok', service: 'salesforce-mcp' }))
+app.get('/', (c) => c.json({
+  status: 'ok',
+  service: 'salesforce-mcp',
+  env_check: {
+    KV_REST_API_URL: !!process.env.KV_REST_API_URL,
+    KV_REST_API_TOKEN: !!process.env.KV_REST_API_TOKEN,
+    KV_URL: !!process.env.KV_URL,
+    UPSTASH_REDIS_REST_URL: !!process.env.UPSTASH_REDIS_REST_URL,
+    SF_CLIENT_ID: !!process.env.SF_CLIENT_ID,
+    MCP_JWT_SECRET: !!process.env.MCP_JWT_SECRET,
+    VERCEL_PROJECT_PRODUCTION_URL: process.env.VERCEL_PROJECT_PRODUCTION_URL || 'not set',
+  },
+}))
 
 // ──────────────────────────────────────
 // OAuth Discovery
